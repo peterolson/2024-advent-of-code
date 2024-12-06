@@ -8,7 +8,7 @@ for y in range(len(lines)):
         if lines[y][x] == '^':
             initial_guard_position = x + y * 1j
 
-def count_visited_positions(obstacle_position):
+def get_visited_coordinates(obstacle_position):
     guard_position = initial_guard_position
     guard_direction = -1j
 
@@ -17,7 +17,7 @@ def count_visited_positions(obstacle_position):
 
     while guard_position in grid:
         if (guard_position, guard_direction) in previously_visited_positions:
-            return -1
+            return set()
         previously_visited_positions.add((guard_position, guard_direction))
         visited_coordinates.add(guard_position)
         next_position = guard_position + guard_direction
@@ -26,15 +26,16 @@ def count_visited_positions(obstacle_position):
         else:
             guard_position = next_position
 
-    return len(visited_coordinates)
+    return visited_coordinates
 
-print("Part 1:", count_visited_positions(-10))
+visited_coordinates = get_visited_coordinates(-10)
+
+print("Part 1:", len(visited_coordinates))
 
 loop_positions = 0
-for y in range(len(lines)):
-    print(y, "/", len(lines))
-    for x in range(len(lines[y])):
-        if count_visited_positions(x + y * 1j) == -1:
-            loop_positions += 1
-
+for i, c in enumerate(visited_coordinates):
+    if i % 100 == 0:
+        print(i, "/", len(visited_coordinates))
+    if len(get_visited_coordinates(c)) == 0:
+        loop_positions += 1
 print("Part 2:", loop_positions)
