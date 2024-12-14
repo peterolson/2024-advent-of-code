@@ -1,6 +1,4 @@
 from collections import Counter
-from time import sleep
-
 
 with open('input/14.txt', 'r') as f:
     lines = f.read().splitlines()
@@ -40,14 +38,6 @@ for v in quadrants.values():
 
 print("Part 1:", safety_factor)
 
-def display_grid(positions):
-    grid = [['.' for _ in range(width)] for _ in range(height)]
-    for position in positions:
-        px, py = position
-        grid[py][px] = '#'
-    for row in grid:
-        print(''.join(row))
-
 def count_horizontal_adjacencies(positions):
     adjacencies = 0
     pos_set = set(positions)
@@ -56,10 +46,6 @@ def count_horizontal_adjacencies(positions):
             if (x, y) in pos_set and (x + 1, y) in pos_set:
                 adjacencies += 1
     return adjacencies
-
-def display_at_time(t):
-    positions = [get_position_after_time(robot, t) for robot in robots]
-    display_grid(positions)
 
 for t in range(10000):
     positions = [get_position_after_time(robot, t) for robot in robots]
