@@ -1,3 +1,6 @@
+from collections import Counter
+
+
 with open('input/20.txt', 'r') as f:
     lines = f.read().splitlines()
 
@@ -49,5 +52,31 @@ count = 0
 for (position, adjacent_position), time_saved in time_savings.items():
     if time_saved >= 100:
         count += 1
-
 print("Part 1:", count)
+
+def distance(position1, position2):
+    return int(abs(position1.real - position2.real) + abs(position1.imag - position2.imag))
+
+def count_cheats(cheat_length):
+    cheats = {}
+    for i, start_position in enumerate(distances_from_end):
+        if i % 100 == 0:
+            print(i, "of", len(distances_from_end))
+        end_positions = [e for e in distances_from_end if distance(start_position, e) <= cheat_length and distances_from_end[e] < distances_from_end[start_position]]
+        for end_position in end_positions:
+            time_saved = distances_from_end[start_position] - distances_from_end[end_position] - distance(start_position, end_position)
+            if (start_position, end_position) not in cheats:
+                cheats[(start_position, end_position)] = time_saved
+            elif time_saved < cheats[(start_position, end_position)]:
+                cheats[(start_position, end_position)] = time_saved
+
+    cheats_by_time = Counter()
+    for cheat in cheats:
+        cheats_by_time[cheats[cheat]] += 1
+    return cheats_by_time
+
+print("Part 2:", sum([c for s, c in count_cheats(20).items() if s >= 100]))
+
+
+
+
