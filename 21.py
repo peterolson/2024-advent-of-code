@@ -1,5 +1,5 @@
-from collections import Counter
-
+from functools import cache
+from itertools import permutations
 
 with open('input/21.txt', 'r') as f:
     lines = f.read().splitlines()
@@ -9,8 +9,6 @@ arrow_keypad = [' ^A', '<v>']
 directions = {'^': (0, -1), '>': (1, 0), 'v': (0, 1), '<': (-1, 0)}
 
 transitions = {}
-
-arrow_priority = ["<", "v", ">", "^"]
 
 num_coords = {}
 for y, row in enumerate(num_keypad):
@@ -24,58 +22,41 @@ for y, row in enumerate(arrow_keypad):
         if key != " ":
             arrow_coords[key] = (x, y)
 
-def populate_transitions(coords : dict[str, tuple[int, int]]):
-    for a_key, a_coord in coords.items():
-        for b_key, b_coord in coords.items():
-            if a_key == b_key:
-                transitions[(a_key, b_key)] = ""
-                continue
-            dx, dy = b_coord[0] - a_coord[0], b_coord[1] - a_coord[1]
-            x_arrow = ">" if dx > 0 else "<"
-            y_arrow = "v" if dy > 0 else "^"
-            if dx == 0 and dy == 0:
-                transitions[(a_key, b_key)] = ""
-            elif dx == 0:
-                transitions[(a_key, b_key)] = y_arrow * abs(dy)
-            elif dy == 0:
-                transitions[(a_key, b_key)] = x_arrow * abs(dx)
+@cache
+def count_presses(sequence, depth, start='A'):
+    if len(sequence) == 0:
+        return 0
+    end = sequence[0]
+    coords = arrow_coords if start in arrow_coords and end in arrow_coords else num_coords
+    x0, y0 = coords[start]
+    x1, y1 = coords[end]
+    dx, dy = x1 - x0, y1 - y0
+    x_arrow = ">" if dx > 0 else "<"
+    y_arrow = "v" if dy > 0 else "^"
+    buttons_to_press = x_arrow * abs(dx) + y_arrow * abs(dy)
 
-            elif a_key in num_coords and b_key in num_coords and (a_coord[0] + dx, a_coord[1]) not in num_coords.values():
-                transitions[(a_key, b_key)] = y_arrow * abs(dy) + x_arrow * abs(dx)
-            elif a_key in num_coords and b_key in num_coords and (a_coord[0], a_coord[1] + dy) not in num_coords.values():
-                transitions[(a_key, b_key)] = x_arrow * abs(dx) + y_arrow * abs(dy)
-
-            elif a_key in arrow_coords and b_key in arrow_coords and (a_coord[0] + dx, a_coord[1]) not in arrow_coords.values():
-                transitions[(a_key, b_key)] = y_arrow * abs(dy) + x_arrow * abs(dx)
-            elif a_key in arrow_coords and b_key in arrow_coords and (a_coord[0], a_coord[1] + dy) not in arrow_coords.values():
-                transitions[(a_key, b_key)] = x_arrow * abs(dx) + y_arrow * abs(dy)
-
-            elif arrow_priority.index(x_arrow) < arrow_priority.index(y_arrow):
-                transitions[(a_key, b_key)] = x_arrow * abs(dx) + y_arrow * abs(dy)
-            else:
-                transitions[(a_key, b_key)] = y_arrow * abs(dy) + x_arrow * abs(dx)
-
-populate_transitions(num_coords)
-populate_transitions(arrow_coords)
-
-def get_sequence(code):
-    s = ""
-    prev = "A"
-    for c in code:
-        s += transitions[(prev, c)] + "A"
-        prev = c
-    return s
-
-def iterate_sequence(code, n):
-    c = code
-    for _ in range(n):
-        c = get_sequence(c)
-    return c
-
-def get_complexity(code, n):
-    s = iterate_sequence(code, n)
-    num = int(code.lstrip("0").replace("A", ""))
-    print(num, len(s))
-    return num * len(s)
+    if depth == 0:
+        return len(buttons_to_press) + 1 + count_presses(sequence[1:], depth, end)
     
-print(sum([get_complexity(code, 3) for code in lines]))
+    valid_orders = []
+    for button_order in set(permutations(buttons_to_press)):
+        x0, y0 = coords[start]
+        is_valid = True
+        for button in button_order:
+            dx, dy = directions[button]
+            x0 += dx
+            y0 += dy
+            if (x0, y0) not in coords.values():
+                is_valid = False
+                break
+        if is_valid:
+            valid_orders.append(''.join(button_order))
+    min_presses = min(count_presses(button_order + 'A', depth - 1) for button_order in valid_orders)
+    return min_presses + count_presses(sequence[1:], depth, end)
+
+def get_complexity(code, depth):
+    n = int(code.lstrip('0').replace('A', ''))
+    return count_presses(code, depth) * n
+
+print("Part 1:", sum(get_complexity(line, 2) for line in lines))
+print("Part 2:", sum(get_complexity(line, 25) for line in lines))
